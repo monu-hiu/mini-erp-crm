@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------
+// ENUMS
+// ------------------------------
+
+enum Role {
+  ADMIN
+  SALES
+  WAREHOUSE
+  ACCOUNTS
+}
+
+enum CustomerType {
+  RETAIL
+  WHOLESALE
+  DISTRIBUTOR
+}
+
+enum CustomerStatus {
+  LEAD
+  ACTIVE
+  INACTIVE
+}
+
+enum MovementType {
+  IN
+  OUT
+}
+
+enum ChallanStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
+// ------------------------------
+// MODELS
+// ------------------------------
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  followUpNotes  FollowUpNote[] @relation("NoteCreatedBy")
+  stockMovements StockMovement[] @relation("MovementCreatedBy")
+  challans       Challan[]       @relation("ChallanCreatedBy")
+
+  @@map("users")
+}
+
+model Customer {
+  id            Int             @id @default(autoincrement())
+  name          String
+  mobile        String
+  email         String?
+  businessName  String?
+  gstNumber     String?
+  customerType  CustomerType
+  address       String?         @db.Text
+  status        CustomerStatus  @default(LEAD)
+  followUpDate  DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  notes    FollowUpNote[]
+  challans Challan[]
+
+  @@index([status])
+  @@index([customerType])
+  @@map("customers")
+}
+
+model FollowUpNote {
+  id         Int      @id @default(autoincrement())
+  customerId Int
+  note       String   @db.Text
+  createdById Int
+  createdAt  DateTime @default(now())
+
+  customer  Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdBy User     @relation("NoteCreatedBy", fields: [createdById], references: [id])
+
+  @@index([customerId])
+  @@map("follow_up_notes")
+}
+
+model Product {
+  id            Int      @id @default(autoincrement())
+  name          String
+  sku           String   @unique
+  category      String?
+  unitPrice     Decimal  @db.Decimal(10, 2)
+  currentStock  Int      @default(0)
+  minStockAlert Int      @default(0)
+  location      String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  stockMovements StockMovement[]
+  challanItems   ChallanItem[]
+
+  @@index([sku])
+  @@index([category])
+  @@map("products")
+}
+
+model StockMovement {
+  id             Int          @id @default(autoincrement())
+  productId      Int
+  quantityChanged Int
+  movementType   MovementType
+  reason         String
+  createdById    Int
+  createdAt      DateTime     @default(now())
+
+  product   Product @relation(fields: [productId], references: [id])
+  createdBy User    @relation("MovementCreatedBy", fields: [createdById], references: [id])
+
+  @@index([productId])
+  @@map("stock_movements")
+}
+
+model Challan {
+  id             Int           @id @default(autoincrement())
+  challanNumber  String        @unique
+  customerId     Int
+  totalQuantity  Int           @default(0)
+  status         ChallanStatus @default(DRAFT)
+  createdById    Int
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  confirmedAt    DateTime?
+
+  customer  Customer      @relation(fields: [customerId], references: [id])
+  createdBy User          @relation("ChallanCreatedBy", fields: [createdById], references: [id])
+  items     ChallanItem[]
+
+  @@index([customerId])
+  @@index([status])
+  @@map("challans")
+}
+
+// Snapshot of product data at time of sale -- product price/name can change later,
+// this table freezes what was actually sold.
+model ChallanItem {
+  id                 Int     @id @default(autoincrement())
+  challanId          Int
+  productId          Int
+  productNameSnapshot String
+  productSkuSnapshot  String
+  unitPriceSnapshot   Decimal @db.Decimal(10, 2)
+  quantity           Int
+
+  challan Challan @relation(fields: [challanId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([challanId])
+  @@map("challan_items")
+}
