@@ -123,10 +123,9 @@ export default function Signup() {
     <option value="SALES">Sales</option>
     <option value="WAREHOUSE">Warehouse</option>
     <option value="ACCOUNTS">Accounts</option>
+      <option value="Admin">Admin</option>
   </select>
-  <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-    Admin accounts are created separately and can't be self-registered.
-  </p>
+
 </div>
 
         <button
