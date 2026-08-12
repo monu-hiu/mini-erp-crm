@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Set VITE_API_URL in a .env file when deploying (see .env.example).
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://mini-erp-crm-25u7.onrender.com';
 
 export const apiClient = axios.create({ baseURL: BASE_URL });
 
