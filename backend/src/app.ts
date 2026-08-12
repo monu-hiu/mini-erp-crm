@@ -12,17 +12,27 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 const app = express();
 
 app.use(helmet());
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || '*',
+    origin: process.env.FRONTEND_URL,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
+
 app.use(express.json());
-app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
+
+app.use(
+  morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined')
+);
 
 app.get('/health', (req, res) => {
-  res.status(200).json({ success: true, message: 'API is up.' });
+  res.status(200).json({
+    success: true,
+    message: 'API is up.',
+  });
 });
 
 app.use('/auth', authRoutes);
